@@ -1,0 +1,69 @@
+// escravo
+//RE - receiver enable - quando em HIGH desabilita a recepção de dados; em LOW ativa a recepção
+//DE - driver enable - quando em HIGH, sinaliza o envio de dados
+const int DE_RE =  16;  
+const int atuador =  0; 
+const int led_sinalizador = 2;
+
+#include <DHT.h> //biblioteca do sensor
+
+#define DHTPIN 4 //pino digital em que o DHT está concectado
+#define DHTTYPE DHT22 //modelo de sensor utilizado
+
+// Define pino e tipo do sensor DHT
+DHT dht(4, DHT22);
+
+//DHT dht(DHTPIN, DHTTYPE);
+
+
+
+void setup() 
+{ 
+  dht.begin();
+  Serial.begin(9600);  
+  pinMode(DE_RE, OUTPUT);
+  pinMode(atuador, OUTPUT);
+  pinMode(led_sinalizador, OUTPUT);  
+  digitalWrite(DE_RE, LOW);                 // RS485 como receptor
+  digitalWrite(atuador, LOW);
+  digitalWrite(led_sinalizador, LOW);
+} 
+
+float set_point = 24;
+
+void loop() 
+{  
+    if(Serial.available()){
+    if(Serial.read()=='1'){                //endereço do escravo 1/2
+      Serial.print("ok");
+    delay(10);
+    char funcao=Serial.read();            // ler o caracter de função
+      if(funcao=='W'){ // habilita para escrita
+         if(digitalRead(atuador)==LOW){
+           digitalWrite(atuador,HIGH);
+           }
+         else{
+           digitalWrite(atuador,LOW);
+         }          
+       }
+
+        if(funcao=='L'){ // habilita para leitura
+          Serial.println(millis());
+          float temp = dht.readTemperature();
+          Serial.println(millis());
+            if (temp >= set_point){
+              digitalWrite(led_sinalizador, HIGH);
+            }
+            digitalWrite(DE_RE, HIGH); // rs485 como transmisor 
+            Serial.print("i"); // inicio da transmissão
+            delay(8);    
+            Serial.println("temperatura: ");  // envia  
+           Serial.print(temp);                   
+           Serial.flush(); //aguarda pela transmissão de dados seriais para concluir
+            digitalWrite(DE_RE, LOW);  // RS485 como receptor              
+        }
+     }
+   }
+} 
+
+
